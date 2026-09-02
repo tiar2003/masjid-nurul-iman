@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi Masjid Nurul Iman</title>
-    <!-- Tailwind CSS via CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -18,21 +18,16 @@
     <nav class="bg-white shadow-md fixed w-full z-50 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo & Judul -->
                 <div class="flex items-center">
                     <svg class="w-8 h-8 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     <span class="font-bold text-xl text-gray-800">Masjid Nurul Iman</span>
                 </div>
-                
-                <!-- Menu Tengah -->
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#beranda" class="text-gray-600 hover:text-green-600 font-medium transition">Beranda</a>
                     <a href="#galeri" class="text-gray-600 hover:text-green-600 font-medium transition">Galeri</a>
                     <a href="#jadwal" class="text-gray-600 hover:text-green-600 font-medium transition">Jadwal Khutbah</a>
                     <a href="#keuangan" class="text-gray-600 hover:text-green-600 font-medium transition">Laporan Keuangan</a>
                 </div>
-
-                <!-- Tombol Login (Menggunakan Blade URL Helper) -->
                 <div class="flex items-center">
                     <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md font-semibold text-sm shadow-sm transition duration-300">
                         Login Admin
@@ -59,46 +54,22 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Card TPQ -->
+                @forelse($galleries as $galeri)
                 <div class="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                    <img src="https://images.unsplash.com/photo-1577884812294-88981442a8b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="TPQ" class="w-full h-48 object-cover">
+                    <img src="{{ asset('storage/' . $galeri->image_path) }}" alt="Galeri" class="w-full h-48 object-cover">
                     <div class="p-5">
-                        <h3 class="font-bold text-lg mb-2 text-green-700">TPQ Masjid Nurul Iman</h3>
-                        <p class="text-sm text-gray-600">Kegiatan belajar membaca Al-Quran untuk anak-anak dan remaja.</p>
+                        <h3 class="font-bold text-lg mb-2 text-green-700">{{ $galeri->category }}</h3>
+                        <p class="text-sm text-gray-600">{{ $galeri->caption }}</p>
                     </div>
                 </div>
-
-                <!-- Card Maulid Nabi -->
-                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                    <img src="https://images.unsplash.com/photo-1596716035017-d7d42cf38a53?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Maulid Nabi" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg mb-2 text-green-700">Peringatan Maulid Nabi</h3>
-                        <p class="text-sm text-gray-600">Dokumentasi tabligh akbar dan sholawatan bersama jamaah.</p>
-                    </div>
-                </div>
-
-                <!-- Card Buka Bersama -->
-                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                    <img src="https://images.unsplash.com/photo-1542152864-1cb58e4cc80c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Buka Bersama" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg mb-2 text-green-700">Buka Puasa Bersama</h3>
-                        <p class="text-sm text-gray-600">Momen kebersamaan berbuka puasa di bulan suci Ramadhan.</p>
-                    </div>
-                </div>
-
-                <!-- Card Kajian Rutin -->
-                <div class="bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                    <img src="https://images.unsplash.com/photo-1609599006353-e629aaab31ce?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Kajian Rutin" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg mb-2 text-green-700">Kajian Rutin Mingguan</h3>
-                        <p class="text-sm text-gray-600">Kajian tafsir dan fiqih setiap ba'da Maghrib bersama ustadz.</p>
-                    </div>
-                </div>
+                @empty
+                <div class="col-span-4 text-center text-gray-500 py-8">Belum ada foto galeri yang diunggah.</div>
+                @endforelse
             </div>
         </div>
     </section>
 
-<!-- Section Jadwal Khutbah & Kultum -->
+    <!-- Section Jadwal Khutbah & Kultum -->
     <section id="jadwal" class="py-16 bg-gray-50">
         <div class="max-w-6xl mx-auto px-4">
             <div class="text-center mb-12">
@@ -112,7 +83,6 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="bg-green-600 text-white py-4 px-6 flex justify-between items-center">
                         <h3 class="font-bold text-lg">Jadwal Khutbah Jumat</h3>
-                        <span class="text-xs bg-green-500 px-2 py-1 rounded">3 Bulan Kedepan</span>
                     </div>
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -122,18 +92,14 @@
                             </tr>
                         </thead>
                         <tbody class="text-gray-700">
+                            @forelse($jadwalKhutbah as $khutbah)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">4 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Ust. H. Abdul Somad, Lc.</td>
+                                <td class="py-3 px-6">{{ \Carbon\Carbon::parse($khutbah->date)->translatedFormat('d F Y') }}</td>
+                                <td class="py-3 px-6 font-medium">{{ $khutbah->speaker->name ?? '-' }}</td>
                             </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">11 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Dr. K.H. Muhammad Zaid</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">18 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Ust. Budi Rahman, M.Ag</td>
-                            </tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center py-4 text-gray-500">Jadwal belum tersedia.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -142,7 +108,6 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="bg-yellow-500 text-white py-4 px-6 flex justify-between items-center">
                         <h3 class="font-bold text-lg">Jadwal Kultum</h3>
-                        <span class="text-xs bg-yellow-400 px-2 py-1 rounded">30 Hari Kedepan</span>
                     </div>
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -152,22 +117,17 @@
                             </tr>
                         </thead>
                         <tbody class="text-gray-700">
+                            @forelse($jadwalKultum as $kultum)
                             <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">2 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Ust. Hanan Attaki</td>
+                                <td class="py-3 px-6">{{ \Carbon\Carbon::parse($kultum->date)->translatedFormat('d F Y') }}</td>
+                                <td class="py-3 px-6 font-medium">{{ $kultum->speaker->name ?? '-' }}</td>
                             </tr>
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">3 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Ust. Adi Hidayat, Lc.</td>
-                            </tr>
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="py-3 px-6">4 September 2026</td>
-                                <td class="py-3 px-6 font-medium">Ust. Khalid Basalamah</td>
-                            </tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center py-4 text-gray-500">Jadwal belum tersedia.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
     </section>
@@ -175,40 +135,99 @@
 <!-- Section Perolehan Kotak Amal Tarawih -->
     <section id="keuangan" class="py-16 bg-white">
         <div class="max-w-5xl mx-auto px-4">
-            <div class="text-center mb-10">
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 uppercase">Hasil Kotak Amal Solat Terawih 1448 H / 2027 M</h2>
-                <div class="w-24 h-1 bg-blue-600 mx-auto mt-4 rounded"></div>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800">Laporan Kotak Amal Terawih</h2>
+                <div class="w-24 h-1 bg-green-600 mx-auto mt-4 rounded"></div>
             </div>
 
-            <div class="bg-white rounded shadow-sm overflow-hidden max-w-5xl mx-auto">
-                <table class="w-full text-center border-collapse border border-gray-200">
+            <!-- Kartu Total Sementara -->
+            <div class="bg-gradient-to-r from-green-600 to-green-500 rounded-xl shadow-lg p-8 text-center text-white max-w-lg mx-auto mb-10 transition hover:shadow-xl">
+                <h3 class="text-xl font-medium opacity-90">Total Perolehan Sementara</h3>
+                <p class="text-4xl md:text-5xl font-bold mt-2" id="total-amal-display">Rp 0</p>
+            </div>
+
+            <!-- Tabel Detail -->
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden max-w-4xl mx-auto">
+                <table class="w-full text-center border-collapse">
                     <thead>
-                        <tr class="bg-[#3b82f6] text-white">
-                            <th class="py-3 px-4 border border-[#2563eb] font-semibold w-16">No</th>
-                            <th class="py-3 px-4 border border-[#2563eb] font-semibold">Hari</th>
-                            <th class="py-3 px-4 border border-[#2563eb] font-semibold">Tanggal</th>
-                            <th class="py-3 px-4 border border-[#2563eb] font-semibold">Hasil Kotak Amal (Rp)</th>
-                            <th class="py-3 px-4 border border-[#2563eb] font-semibold">Jumlah</th>
+                        <tr class="bg-gray-100 text-gray-700">
+                            <th class="py-4 px-6 font-semibold border-b">No</th>
+                            <th class="py-4 px-6 font-semibold border-b">Hari</th>
+                            <th class="py-4 px-6 font-semibold border-b">Tanggal</th>
+                            <th class="py-4 px-6 font-semibold border-b">Hasil Kotak Amal (Rp)</th>
+                            <th class="py-4 px-6 font-semibold border-b">Jumlah</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-700">
-                        <tr class="hover:bg-gray-50">
-                            <td class="py-3 px-4 border border-gray-200">1</td>
-                            <td class="py-3 px-4 border border-gray-200">RABU</td>
-                            <td class="py-3 px-4 border border-gray-200">18-02-2026</td>
-                            <td class="py-3 px-4 border border-gray-200">Rp 1.000.000</td>
-                            <td class="py-3 px-4 border border-gray-200">Rp 1.000.000</td>
+                    <tbody class="text-gray-700" id="tabel-amal-body">
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-gray-500">Memuat data dari sistem lama...</td>
                         </tr>
-                        <!-- Baris data tambahan dari PHP akan di-loop di sini -->
                     </tbody>
                 </table>
             </div>
-
-            <div class="mt-8 text-right">
-                <p class="text-2xl font-bold text-gray-800">Total Keseluruhan: Rp 1.000.000</p>
-            </div>
         </div>
     </section>
+
+   <!-- Script Fetch Data Lama (Dengan Auto-Refresh & Deteksi Hari) -->
+    <script>
+        function muatDataKotakAmal() {
+            fetch('/Nurul_Iman/api.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('tabel-amal-body');
+                    const totalDisplay = document.getElementById('total-amal-display');
+                    
+                    let htmlBaru = '';
+                    let totalAkumulasi = 0;
+                    
+                    let arrayData = Array.isArray(data) ? data : (data.data || []);
+
+                    if (arrayData.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-500">Belum ada data kotak amal.</td></tr>';
+                        return;
+                    }
+
+                    // Array nama hari dalam bahasa Indonesia
+                    const daftarHari = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
+
+                    arrayData.forEach((item, index) => {
+                        let nominal = parseInt(item.hasil || item.jumlah || item.nominal || item.Hasil || 0);
+                        totalAkumulasi += nominal;
+
+                        // Deteksi nama hari otomatis dari item.tanggal
+                        let namaHari = '-';
+                        if (item.tanggal) {
+                            let dateObj = new Date(item.tanggal);
+                            namaHari = daftarHari[dateObj.getDay()];
+                        }
+                        
+                        // Gunakan item.hari dari API jika ada, jika tidak gunakan namaHari otomatis
+                        let hariFix = item.hari ? item.hari : namaHari;
+
+                        htmlBaru += `
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-4 px-6">${index + 1}</td>
+                                <td class="py-4 px-6 uppercase">${hariFix}</td>
+                                <td class="py-4 px-6">${item.tanggal || '-'}</td>
+                                <td class="py-4 px-6 text-gray-800">Rp ${nominal.toLocaleString('id-ID')}</td>
+                                <td class="py-4 px-6 font-medium text-green-700">Rp ${totalAkumulasi.toLocaleString('id-ID')}</td>
+                            </tr>
+                        `;
+                    });
+
+                    tbody.innerHTML = htmlBaru;
+                    totalDisplay.innerText = 'Rp ' + totalAkumulasi.toLocaleString('id-ID');
+                })
+                .catch(error => {
+                    console.error('Gagal memuat data:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            muatDataKotakAmal();
+            setInterval(muatDataKotakAmal, 10000);
+        });
+    </script>
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-8">

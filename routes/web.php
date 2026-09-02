@@ -5,21 +5,47 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GalleryController;
 
+// Import model yang dibutuhkan
+use App\Models\Gallery;
+use App\Models\Schedule;
+use App\Models\Terawih;
+use App\Models\User;
 
-// Otomatis arahkan halaman utama ke halaman login
+// -----------------------------------------------------
+// ROUTE HALAMAN UTAMA (LANDING PAGE)
+// -----------------------------------------------------
 Route::get('/', function () {
-    return redirect('/login');
+    // 1. Ambil 4 foto galeri terbaru
+    $galleries = Gallery::latest()->take(4)->get();
+
+    // 2. Ambil Jadwal Khutbah
+    $jadwalKhutbah = Schedule::with('speaker')
+        ->where('type', 'Khutbah')
+        ->where('date', '>=', now()->toDateString())
+        ->orderBy('date', 'asc')
+        ->take(3)->get();
+
+    // 3. Ambil Jadwal Kultum
+    $jadwalKultum = Schedule::with('speaker')
+        ->where('type', 'Kultum')
+        ->where('date', '>=', now()->toDateString())
+        ->orderBy('date', 'asc')
+        ->take(3)->get();
+
+    // 4. Ambil Data Kotak Amal Terawih
+    $tarawihs = Terawih::orderBy('tanggal', 'asc')->get();
+
+    // Asumsi field 'nominal' menyimpan jumlah uang
+    $totalTarawih = $tarawihs->sum('amount');
+
+    // Kirim semua data (variabel) ke view welcome
+    return view('welcome', compact('galleries', 'jadwalKhutbah', 'jadwalKultum', 'tarawihs', 'totalTarawih'));
 });
 
-// Route ini akan menampilkan landing page saat link root (/) dibuka
-Route::get('/', function () {
-    return view('welcome'); 
-});
 
-// Asumsi Anda sudah punya route untuk auth/dashboard dari bawaan Laravel (Breeze/Jetstream)
-// Route::get('/dashboard', ... )
-
-// Grup route untuk admin (harus login)
+// -----------------------------------------------------
+// ROUTE ADMIN (HARUS LOGIN)
+// -----------------------------------------------------
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard Utama
@@ -33,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/speakers', [AdminController::class, 'storeSpeaker'])->name('speaker.store');
     Route::put('/speakers/{speaker}', [AdminController::class, 'updateSpeaker'])->name('speaker.update');
     Route::post('/speakers/import', [AdminController::class, 'importSpeaker'])->name('speakers.import');
+    
     // Rute untuk menghapus penceramah
     Route::delete('/speakers/{id}', [AdminController::class, 'destroySpeaker'])->name('speakers.destroy');
 

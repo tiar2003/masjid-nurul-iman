@@ -1,0 +1,8 @@
+Contoh Format File CSV
+Sebelum mengunggah, Anda cukup membuat file teks di Notepad dengan format seperti ini (simpan sebagai penceramah.csv):
+
+Cuplikan kode
+Nama,Gelar,Tipe,LimitOnce,PasaranJawa
+Ahmad Ayub,S.Pd.I M.Pd,Khutbah (Jumat),1,Wage
+Imron Abror,S.Pd,Khutbah (Jumat),0,
+(Keterangan: Kolom ke-4 bernilai 1 jika dibatasi 1x tampil, dan 0 jika tidak. Kolom ke-5 diisi nama pasaran seperti Wage atau dikosongkan jika tidak ada larangan).

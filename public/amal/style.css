@@ -1,0 +1,369 @@
+/* ============================= */
+/* ===== RESET & GLOBAL ======== */
+/* ============================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    padding: 20px;
+    color: #333;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+}
+
+/* ============================= */
+/* ========== KOP ============== */
+/* ============================= */
+
+.kop {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.kop img {
+    width: 100%;
+    max-width: 850px;
+    height: auto;
+}
+
+/* ============================= */
+/* ========== JUDUL ============ */
+/* ============================= */
+
+h2 {
+    text-align: center;
+    margin: 25px 0;
+    font-weight: 700;
+    font-size: 26px;
+}
+
+/* ============================= */
+/* ========== TABLE ============ */
+/* ============================= */
+
+.table-wrapper {
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    /* penting agar semua kolom muat */
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 6px 4px;
+    /* lebih kecil */
+    text-align: center;
+    font-size: 13px;
+    /* lebih kecil */
+    word-wrap: break-word;
+}
+
+th {
+    background: #2c7be5;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Atur proporsi kolom agar seimbang */
+th:nth-child(1),
+td:nth-child(1) {
+    width: 6%;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+    width: 18%;
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+    width: 18%;
+}
+
+th:nth-child(4),
+td:nth-child(4) {
+    width: 29%;
+}
+
+th:nth-child(5),
+td:nth-child(5) {
+    width: 29%;
+}
+
+input {
+    width: 100%;
+    padding: 4px;
+    font-size: 13px;
+    text-align: right;
+}
+
+/* ============================= */
+/* ========== TOTAL ============ */
+/* ============================= */
+
+.total-box {
+    margin-top: 25px;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* ============================= */
+/* ===== BUTTON FINAL FIX ====== */
+/* ============================= */
+
+.action-buttons {
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Baris atas */
+.top-row {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+/* Semua tombol */
+.action-buttons button {
+    width: 160px;
+    height: 45px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+
+/* Warna */
+.print-btn {
+    background: #28a745;
+}
+
+.excel-btn {
+    background: #1d6f42;
+}
+
+.reset-btn {
+    background: #dc3545;
+    margin-top: 15px;
+}
+
+/* Hover */
+.action-buttons button:hover {
+    opacity: 0.9;
+}
+
+/* HP tetap sama layout */
+@media (max-width: 600px) {
+
+    .top-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .action-buttons button {
+        width: 140px;
+        height: 42px;
+        font-size: 13px;
+    }
+
+}
+
+/* ============================= */
+/* ===== RESPONSIVE TABLET ===== */
+/* ============================= */
+
+@media (max-width: 1024px) {
+
+    body {
+        padding: 15px;
+    }
+
+    h2 {
+        font-size: 22px;
+    }
+
+    th,
+    td {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    input {
+        font-size: 14px;
+    }
+
+    .total-box {
+        font-size: 18px;
+    }
+}
+
+/* ============================= */
+/* ===== RESPONSIVE HP ========= */
+/* ============================= */
+
+@media (max-width: 600px) {
+
+    th,
+    td {
+        font-size: 11px;
+        /* kecil tapi masih terbaca */
+        padding: 4px 2px;
+        /* lebih padat */
+    }
+
+    input {
+        font-size: 11px;
+        padding: 3px;
+    }
+
+}
+
+/* ============================= */
+/* ===== PRINT A4 FULL FIX ===== */
+/* ============================= */
+
+@media print {
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+
+    html,
+    body {
+        width: 210mm;
+        height: 297mm;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .container {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    /* Sembunyikan tombol */
+    .action-buttons {
+        display: none !important;
+    }
+
+    h2 {
+        font-size: 14px;
+        margin: 8px 0 12px 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+        /* penting supaya tidak potong kanan */
+    }
+
+    th,
+    td {
+        border: 1px solid #000;
+        font-size: 16px;
+        padding: 4px 3px;
+    }
+
+    input {
+        border: none;
+        font-size: 16px;
+        padding: 0;
+    }
+
+    th {
+        background: #2c7be5 !important;
+        color: white !important;
+    }
+
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* Kolom ke-4 dan ke-5 rata tengah */
+    td:nth-child(4),
+    td:nth-child(5),
+    th:nth-child(4),
+    th:nth-child(5) {
+        text-align: center;
+    }
+
+    /* Input dalam kolom ke-4 */
+    td:nth-child(4) input {
+        text-align: center;
+    }
+
+}
+
+/* ============================= */
+/* ===== DESKTOP OPTIMAL ======= */
+/* ============================= */
+
+@media (min-width: 1025px) {
+
+    th,
+    td {
+        font-size: 16px;
+        padding: 10px 8px;
+    }
+
+    input {
+        font-size: 15px;
+    }
+
+    h2 {
+        font-size: 28px;
+    }
+
+    .total-box {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    th,
+    td {
+        font-size: 11px;
+        padding: 4px 2px;
+    }
+
+    input {
+        font-size: 11px;
+    }
+
+}

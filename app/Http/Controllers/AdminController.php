@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 // PASTIKAN MODEL TERAWIH DITAMBAHKAN DI SINI
-use App\Models\{Gallery, Speaker, Schedule, TarawihDonation, Zakat, Terawih};
+use App\Models\{Gallery, OfficialSchedule, Speaker, Schedule, TarawihDonation, Zakat, Terawih};
 use Carbon\Carbon;
 use App\Models\DistribusiZakat;
+use App\Services\OfficialScheduleDocxImporter;
+use InvalidArgumentException;
 
 class AdminController extends Controller
 {
@@ -16,6 +18,7 @@ class AdminController extends Controller
             'galleries' => Gallery::latest()->get(),
             'speakers' => Speaker::all(),
             'schedules' => Schedule::with('speaker')->orderBy('date')->get(),
+            'officialSchedules' => OfficialSchedule::orderBy('date')->get(),
             // Baris 'donations' => TarawihDonation... sudah kita HAPUS
             'zakats' => Zakat::orderBy('date')->get(),
             'distribusi_zakats' => DistribusiZakat::orderBy('tanggal', 'desc')->get()
@@ -45,58 +48,52 @@ class AdminController extends Controller
             'title' => $request->title,
             'type' => $request->type,
             'limit_once' => $request->limit_once == 1 ? 1 : 0,
-            'skip_third_week' => $request->skip_third_week == 1 ? 1 : 0,
+            'limit_twice' => $request->limit_twice == 1 ? 1 : 0,
         ]);
 
         return redirect('/dashboard')->with('success', 'Penceramah berhasil ditambahkan.');
     }
 
-    // 3. Randomizer Khutbah (Dinamis Mencakup Seluruh Hari Jumat dalam 3 Bulan) + ATURAN KHUSUS
-    public function generateKhutbah()
+    // 3. Randomizer Khutbah selama 3 bulan dari bulan awal yang dipilih + ATURAN KHUSUS
+    public function generateKhutbah(Request $request)
     {
+        $request->validate(['month' => ['required', 'date_format:Y-m']]);
+
         $speakers = Speaker::where('type', 'Khutbah')->get();
         if ($speakers->count() < 4)
             return redirect('/dashboard')->with('error', 'Minimal input 4 penceramah khutbah agar bisa diacak.');
 
-        Schedule::where('type', 'Khutbah')->delete(); // Reset jadwal lama
+        $selectedMonth = Carbon::createFromFormat('!Y-m', $request->month);
+        $monthStart = $selectedMonth->copy()->startOfMonth();
+        $monthEnd = $selectedMonth->copy()->addMonths(2)->endOfMonth();
 
-        // Cari seluruh hari Jumat selama 3 bulan ke depan secara dinamis
+        // Cari seluruh hari Jumat selama 3 bulan dari bulan awal yang dipilih.
         $fridays = [];
-        $startDate = Carbon::now();
+        $firstDate = $monthStart->isSameMonth(Carbon::today())
+            ? Carbon::today()
+            : $monthStart->copy();
 
-        // Cari hari Jumat pertama minggu ini/depan
-        $currentFriday = $startDate->copy()->next(Carbon::FRIDAY);
-
-        // Ambil hari Jumat selama 3 bulan (12 hingga 13 minggu tergantung jumlah Jumat riil)
-        // Kita loop dari bulan berjalan hingga 3 bulan kedepan
-        for ($m = 0; $m < 3; $m++) {
-            $monthCheck = Carbon::now()->addMonths($m);
-            $daysInMonth = $monthCheck->daysInMonth;
-
-            for ($d = 1; $d <= $daysInMonth; $d++) {
-                $dateObj = Carbon::create($monthCheck->year, $monthCheck->month, $d);
-                if ($dateObj->isFriday() && $dateObj->greaterThanOrEqualTo(Carbon::today())) {
-                    // Masukkan ke array jika belum ada
-                    if (!in_array($dateObj->format('Y-m-d'), array_map(fn($f) => $f->format('Y-m-d'), $fridays))) {
-                        $fridays[] = $dateObj->copy();
-                    }
-                }
+        for ($date = $firstDate->copy(); $date->lessThanOrEqualTo($monthEnd); $date->addDay()) {
+            if ($date->isFriday()) {
+                $fridays[] = $date->copy();
             }
         }
 
-        // Batasi tepat untuk 3 bulan ke depan (biasanya mencakup 12 atau 13 hari Jumat)
-        // Urutkan berdasarkan tanggal
-        usort($fridays, fn($a, $b) => $a->greaterThan($b) ? 1 : -1);
-
         $usage = [];
+        $monthlyUsage = [];
         foreach ($speakers as $s)
             $usage[$s->id] = 0;
 
-        foreach ($fridays as $index => $friday) {
-            $mingguKe = $index + 1;
+        $generatedSchedules = [];
+        foreach ($fridays as $friday) {
+            $monthKey = $friday->format('Y-m');
+            $monthlyUsage[$monthKey] ??= [];
 
-            $available = $speakers->filter(function ($s) use ($usage, $friday) {
-                $maxLimit = $s->limit_once ? 1 : 4; // Maksimal tampil disesuaikan
+            $available = $speakers->filter(function ($s) use ($usage, $monthlyUsage, $monthKey, $friday) {
+                if (!empty($monthlyUsage[$monthKey][$s->id]))
+                    return false;
+
+                $maxLimit = $s->limit_once ? 1 : ($s->limit_twice ? 2 : 4);
                 if ($usage[$s->id] >= $maxLimit)
                     return false;
 
@@ -112,41 +109,61 @@ class AdminController extends Controller
             });
 
             if ($available->isEmpty()) {
-                $available = $speakers->filter(fn($s) => $usage[$s->id] < 4);
-                if ($available->isEmpty())
-                    $available = $speakers; // Fail-safe jika semua sudah penuh
+                return redirect('/dashboard')->with(
+                    'error',
+                    'Jadwal khutbah tidak dapat dibuat: jumlah penceramah atau aturan tampil 1x tidak mencukupi untuk setiap Jumat pada bulan ' . $friday->translatedFormat('F Y') . '.'
+                );
             }
 
             $chosen = $available->random();
             $usage[$chosen->id]++;
+            $monthlyUsage[$monthKey][$chosen->id] = true;
 
-            Schedule::create([
+            $generatedSchedules[] = [
                 'type' => 'Khutbah',
                 'date' => $friday->format('Y-m-d'),
                 'speaker_id' => $chosen->id
-            ]);
+            ];
         }
 
-        return redirect('/dashboard')->with('success', 'Jadwal Khutbah berhasil diacak mencakup seluruh Jumat bulan tersebut!');
+        Schedule::where('type', 'Khutbah')
+            ->whereBetween('date', [$monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d')])
+            ->delete();
+
+        foreach ($generatedSchedules as $schedule) {
+            Schedule::create($schedule);
+        }
+
+        return redirect('/dashboard')
+            ->with('success', 'Jadwal Khutbah selama 3 bulan mulai ' . $selectedMonth->translatedFormat('F Y') . ' berhasil diacak!')
+            ->with('khutbah_month', $request->month);
     }
 
-    // 4. Randomizer Kultum (30 Hari)
+    // 4. Randomizer Kultum selama 3 bulan dari bulan awal yang dipilih
     public function generateKultum(Request $request)
     {
-        $days = 30; // 30 hari untuk Ramadhan / harian
+        $request->validate(['month' => ['required', 'date_format:Y-m']]);
+
         $speakers = Speaker::where('type', 'Kultum')->get();
         if ($speakers->count() < 2)
             return redirect('/dashboard')->with('error', 'Input penceramah kultum masih kurang.');
 
-        Schedule::where('type', 'Kultum')->delete();
+        $selectedMonth = Carbon::createFromFormat('!Y-m', $request->month);
+        $monthStart = $selectedMonth->copy()->startOfMonth();
+        $monthEnd = $selectedMonth->copy()->addMonths(2)->endOfMonth();
+        $firstDate = $monthStart->isSameMonth(Carbon::today())
+            ? Carbon::today()
+            : $monthStart->copy();
+
+        Schedule::where('type', 'Kultum')
+            ->whereBetween('date', [$monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d')])
+            ->delete();
 
         $usage = [];
         foreach ($speakers as $s)
             $usage[$s->id] = 0;
 
-        $date = Carbon::now();
-
-        for ($i = 0; $i < $days; $i++) {
+        for ($date = $firstDate->copy(); $date->lessThanOrEqualTo($monthEnd); $date->addDay()) {
             $available = $speakers->filter(fn($s) => $usage[$s->id] < 3);
             if ($available->isEmpty())
                 $available = $speakers;
@@ -154,15 +171,52 @@ class AdminController extends Controller
             $chosen = $available->random();
             $usage[$chosen->id]++;
 
-            Schedule::create(['type' => 'Kultum', 'date' => $date->copy()->addDays($i), 'speaker_id' => $chosen->id]);
+            Schedule::create(['type' => 'Kultum', 'date' => $date->format('Y-m-d'), 'speaker_id' => $chosen->id]);
         }
-        return redirect('/dashboard')->with('success', "Jadwal Kultum $days Hari berhasil diacak!");
+        return redirect('/dashboard')
+            ->with('success', 'Jadwal Kultum selama 3 bulan mulai ' . $selectedMonth->translatedFormat('F Y') . ' berhasil diacak!')
+            ->with('kultum_month', $request->month);
+    }
+
+    public function importOfficialSchedule(Request $request, OfficialScheduleDocxImporter $importer)
+    {
+        $validated = $request->validate([
+            'file_docx' => ['required', 'file', 'mimes:docx', 'max:10240'],
+            'align_month' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            $result = $importer->import(
+                $request->file('file_docx')->getPathname(),
+                $request->boolean('align_month')
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
+        }
+
+        $message = $result['count'] . ' jadwal resmi berhasil diperbarui.';
+        if ($result['corrected_month_count'] > 0) {
+            $message .= ' ' . $result['corrected_month_count'] . ' tanggal diselaraskan dengan kolom BULAN pada dokumen.';
+        }
+
+        return back()->with('success', $message);
     }
 
     // 5. Cetak Jadwal A4
-    public function printSchedule($type)
-{
-    $schedules = Schedule::with('speaker')->where('type', $type)->orderBy('date')->get();
+    public function printSchedule(Request $request, $type)
+    {
+    $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+
+    $scheduleQuery = Schedule::with('speaker')->where('type', $type);
+    if ($request->filled('month')) {
+        $selectedMonth = Carbon::createFromFormat('!Y-m', $request->month);
+        $scheduleQuery->whereBetween('date', [
+            $selectedMonth->copy()->startOfMonth()->format('Y-m-d'),
+            $selectedMonth->copy()->addMonths(2)->endOfMonth()->format('Y-m-d'),
+        ]);
+    }
+
+    $schedules = $scheduleQuery->orderBy('date')->get();
 
     // Jika yang dicetak adalah Kultum, arahkan ke templat khusus kultum
     if (strtolower($type) === 'kultum') {
@@ -222,12 +276,19 @@ class AdminController extends Controller
     // 8. Memperbarui aturan atau data penceramah
     public function updateSpeaker(Request $request, Speaker $speaker)
     {
-        $speaker->update([
-            'limit_once' => $request->limit_once == 1 ? 1 : 0,
-            'skip_third_week' => $request->skip_third_week == 1 ? 1 : 0,
+        $request->validate([
+            'limit_once' => ['required', 'boolean'],
+            'limit_twice' => ['required', 'boolean'],
+            'skip_pasaran_jawa' => ['nullable', 'string', 'max:50'],
         ]);
 
-        return redirect('/dashboard')->with('success', "Aturan untuk {$speaker->name} berhasil diperbarui.");
+        $speaker->update([
+            'limit_once' => $request->boolean('limit_once'),
+            'limit_twice' => $request->boolean('limit_twice'),
+            'skip_pasaran_jawa' => $request->input('skip_pasaran_jawa'),
+        ]);
+
+        return response()->json(['message' => "Aturan untuk {$speaker->name} berhasil diperbarui."]);
     }
 
     // 9. Menghapus penceramah
@@ -299,8 +360,8 @@ class AdminController extends Controller
     private function getPasaranJawa($tanggal)
     {
         // Titik acuan referensi (Contoh: 1 Januari 2027 M adalah Kliwon / sesuaikan patokan pasaran lokal)
-        $baseloop = new DateTime('2027-01-01');
-        $target = new DateTime($tanggal);
+        $baseloop = new \DateTime('2027-01-01');
+        $target = new \DateTime($tanggal);
         $diff = $baseloop->diff($target)->days;
 
         // Urutan siklus pasaran jawa: Legi, Pahing, Pon, Wage, Kliwon
@@ -349,11 +410,14 @@ class AdminController extends Controller
 
             // Pastikan kolom nama tidak kosong
             if (!empty($row[0])) {
+                $type = strtolower(trim($row[2] ?? ''));
+                $type = str_contains($type, 'kultum') ? 'Kultum' : 'Khutbah';
+
                 \App\Models\Speaker::create([
                     'name' => trim($row[0]),
                     'title' => trim($row[1] ?? ''),
-                    'type' => trim($row[2] ?? 'Khutbah (Jumat)'),
-                    'limit_once' => isset($row[3]) ? (bool) $row[3] : false,
+                    'type' => $type,
+                    'limit_once' => isset($row[3]) && trim($row[3]) === '1',
                     'skip_pasaran_jawa' => !empty($row[4]) ? trim($row[4]) : null,
                 ]);
             }

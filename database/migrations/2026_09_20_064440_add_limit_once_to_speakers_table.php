@@ -13,9 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('terawihs', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('speakers', function (Blueprint $table) {
+            $table->integer('limit_once')->nullable(); // Menambahkan kolom baru
         });
     }
 
@@ -26,6 +25,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('terawihs');
+        Schema::table('speakers', function (Blueprint $table) {
+            $table->dropColumn('limit_once');
+        });
     }
 };

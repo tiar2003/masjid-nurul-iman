@@ -1,8 +1,15 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-            Sistem Informasi Masjid Nurul Iman
-        </h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Ruang pengelola</p>
+                <h2 class="mt-1 text-2xl font-semibold leading-tight text-gray-900">Sistem Informasi Masjid Nurul Iman</h2>
+                <p class="mt-1 text-sm text-gray-500">Kelola jadwal, kegiatan, dan laporan masjid.</p>
+            </div>
+            <a href="{{ url('/') }}" target="_blank" class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-600">
+                Lihat website <span aria-hidden="true">&nearr;</span>
+            </a>
+        </div>
     </x-slot>
 
     <style>
@@ -11,12 +18,21 @@
         }
     </style>
 
-    <div class="py-12 bg-gray-100 min-h-screen">
+    <div class="dashboard-workspace min-h-screen px-0 py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <div x-data="{
                 activeMenu: localStorage.getItem('masjidMenu') || 'jadwal-input',
                 hoverMenu: null,
+                theme: localStorage.getItem('masjidAdminTheme') || 'light',
+                init() {
+                    document.documentElement.dataset.adminTheme = this.theme;
+                },
+                setTheme(theme) {
+                    this.theme = theme;
+                    localStorage.setItem('masjidAdminTheme', theme);
+                    document.documentElement.dataset.adminTheme = theme;
+                },
                 setMenu(menu) {
                     this.activeMenu = menu;
                     localStorage.setItem('masjidMenu', menu);
@@ -24,73 +40,116 @@
                 }
             }">
 
-                <nav class="bg-white shadow-md border-b-4 border-blue-600 flex flex-wrap rounded-t-lg relative z-50">
-                    <div class="relative" @mouseenter="hoverMenu = 1" @mouseleave="hoverMenu = null">
+                <div class="dashboard-toolbar">
+                    <div class="dashboard-toolbar__status">
+                        <span class="dashboard-toolbar__dot"></span>
+                        <span>Panel pengelola</span>
+                        <span class="dashboard-toolbar__separator">/</span>
+                        <time datetime="{{ now()->toDateString() }}">{{ now()->locale('id')->translatedFormat('l, d F Y') }}</time>
+                    </div>
+                    <div class="dashboard-theme" role="group" aria-label="Tema tampilan">
+                        <span class="dashboard-theme__label">Tema</span>
+                        <button type="button" @click="setTheme('light')" :aria-pressed="(theme === 'light').toString()" :class="{'is-active': theme === 'light'}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+                            Terang
+                        </button>
+                        <button type="button" @click="setTheme('dark')" :aria-pressed="(theme === 'dark').toString()" :class="{'is-active': theme === 'dark'}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg>
+                            Gelap
+                        </button>
+                    </div>
+                </div>
+
+                @if ($errors->any())
+                    <div class="dashboard-feedback" role="alert">
+                        <strong>Periksa kembali data yang dimasukkan.</strong>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <nav class="admin-menu-nav relative z-50 flex flex-wrap bg-white" @click.outside="hoverMenu = null" @keydown.escape.window="hoverMenu = null">
+                    <div class="admin-menu-group relative">
                         <button
-                            class="px-6 py-5 text-gray-700 font-bold hover:text-blue-700 hover:bg-blue-50 focus:outline-none flex items-center transition-colors"
-                            :class="{'text-blue-700 bg-blue-50': activeMenu.startsWith('jadwal')}">
+                            type="button"
+                            @click="hoverMenu = hoverMenu === 1 ? null : 1"
+                            :aria-expanded="(hoverMenu === 1).toString()"
+                            class="flex items-center font-bold text-gray-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none"
+                            :class="{'bg-emerald-50 text-emerald-800': activeMenu.startsWith('jadwal')}">
                             Jadwal & Penceramah
                             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div x-show="hoverMenu === 1" x-transition.opacity.duration.200ms
-                            class="absolute left-0 mt-0 w-56 bg-white border border-gray-200 shadow-xl rounded-b-md overflow-hidden z-50"
+                        <div x-show="hoverMenu === 1" x-transition.opacity.duration.150ms
+                            class="admin-menu-dropdown absolute left-0 top-full z-50 w-56 overflow-hidden bg-white"
                             x-cloak>
                             <a href="#" @click.prevent="setMenu('jadwal-input')"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white border-b transition-colors">Input
+                                class="block border-b px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">Input
                                 Data Penceramah</a>
                             <a href="#" @click.prevent="setMenu('jadwal-kelola')"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition-colors">Acak
+                                class="block px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">Acak
                                 & Cetak Jadwal</a>
                         </div>
                     </div>
 
-                    <div class="relative" @mouseenter="hoverMenu = 2" @mouseleave="hoverMenu = null">
+                    <div class="admin-menu-group relative">
                         <button
-                            class="px-6 py-5 text-gray-700 font-bold hover:text-blue-700 hover:bg-blue-50 focus:outline-none flex items-center transition-colors"
-                            :class="{'text-blue-700 bg-blue-50': activeMenu.startsWith('keuangan')}">
+                            type="button"
+                            @click="hoverMenu = hoverMenu === 2 ? null : 2"
+                            :aria-expanded="(hoverMenu === 2).toString()"
+                            class="flex items-center font-bold text-gray-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none"
+                            :class="{'bg-emerald-50 text-emerald-800': activeMenu.startsWith('keuangan')}">
                             Keuangan Masjid
                             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div x-show="hoverMenu === 2" x-transition.opacity.duration.200ms
-                            class="absolute left-0 mt-0 w-56 bg-white border border-gray-200 shadow-xl rounded-b-md overflow-hidden z-50"
+                        <div x-show="hoverMenu === 2" x-transition.opacity.duration.150ms
+                            class="admin-menu-dropdown absolute left-0 top-full z-50 w-56 overflow-hidden bg-white"
                             x-cloak>
-                            <a href="{{ asset('Nurul_Iman/index.html') }}" target="_blank"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white border-b transition-colors">
-                                Kotak Amal Tarawih ↗
+                            <a href="#" @click.prevent="setMenu('keuangan-amal')"
+                                class="block border-b px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">
+                                Kelola Kotak Amal Tarawih
                             </a>
-                            <a href="#" @click.prevent="setMenu('keuangan-zakat')"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition-colors">Zakat
+                            <a href="{{ route('zakat-admin.index') }}"
+                                class="block px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">Zakat
                                 Fitrah & Mal</a>
                         </div>
                     </div>
 
-                    <div class="relative" @mouseenter="hoverMenu = 3" @mouseleave="hoverMenu = null">
+                    <div class="admin-menu-group relative">
                         <button
-                            class="px-6 py-5 text-gray-700 font-bold hover:text-blue-700 hover:bg-blue-50 focus:outline-none flex items-center transition-colors"
-                            :class="{'text-blue-700 bg-blue-50': activeMenu.startsWith('galeri')}">
+                            type="button"
+                            @click="hoverMenu = hoverMenu === 3 ? null : 3"
+                            :aria-expanded="(hoverMenu === 3).toString()"
+                            class="flex items-center font-bold text-gray-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none"
+                            :class="{'bg-emerald-50 text-emerald-800': activeMenu.startsWith('galeri')}">
                             Galeri Foto
                             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div x-show="hoverMenu === 3" x-transition.opacity.duration.200ms
-                            class="absolute left-0 mt-0 w-56 bg-white border border-gray-200 shadow-xl rounded-b-md overflow-hidden z-50"
+                        <div x-show="hoverMenu === 3" x-transition.opacity.duration.150ms
+                            class="admin-menu-dropdown absolute left-0 top-full z-50 w-56 overflow-hidden bg-white"
                             x-cloak>
                             <a href="#" @click.prevent="setMenu('galeri-upload')"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white border-b transition-colors">Upload
+                                class="block border-b px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">Upload
                                 Foto Baru</a>
                             <a href="#" @click.prevent="setMenu('galeri-lihat')"
-                                class="block px-5 py-3 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition-colors">Lihat
+                                class="block px-5 py-3 text-sm text-gray-700 transition-colors hover:bg-emerald-700 hover:text-white">Lihat
                                 Galeri</a>
                         </div>
                     </div>
+                    <a href="{{ route('operations.index') }}"
+                        class="flex min-h-12 items-center px-5 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-50">
+                        Administrasi Online <span class="ml-2 text-emerald-600" aria-hidden="true">&rarr;</span>
+                    </a>
                 </nav>
 
                 <div x-show="activeMenu === 'jadwal-input'" x-cloak x-transition.opacity.duration.300ms
@@ -173,6 +232,7 @@
                                         <th class="p-3">Nama & Gelar</th>
                                         <th class="p-3">Tipe</th>
                                         <th class="p-3 text-center">Batas 1x Tampil</th>
+                                        <th class="p-3 text-center">Maksimal 2x / 3 Bulan</th>
                                         <th class="p-3 text-center">Pasaran Jawa (Skip)</th>
                                         <th class="p-3 text-center w-24">Aksi</th>
                                     </tr>
@@ -189,14 +249,21 @@
 
                                             <!-- Kolom Checkbox Batas 1x Tampil -->
                                             <td class="p-3 text-center">
-                                                <input type="checkbox" {{ $s->limit_once ? 'checked' : '' }}
+                                                <input id="limit-once-{{ $s->id }}" type="checkbox" {{ $s->limit_once ? 'checked' : '' }}
                                                     onchange="updateAturanPenceramah({{ $s->id }}, 'limit_once', this.checked)"
+                                                    class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer">
+                                            </td>
+
+                                            <td class="p-3 text-center">
+                                                <input id="limit-twice-{{ $s->id }}" type="checkbox" {{ $s->limit_twice ? 'checked' : '' }}
+                                                    onchange="updateAturanPenceramah({{ $s->id }}, 'limit_twice', this.checked)"
                                                     class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer">
                                             </td>
 
                                             <!-- Kolom Pilihan Pasaran Jawa -->
                                             <td class="p-3 text-center">
                                                 <select
+                                                    id="skip-pasaran-{{ $s->id }}"
                                                     onchange="updateAturanPenceramah({{ $s->id }}, 'skip_pasaran_jawa', this.value)"
                                                     class="text-xs border-gray-300 rounded-md shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200">
                                                     <option value="">-- Tidak Ada --</option>
@@ -222,7 +289,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="p-6 text-center text-gray-500">Belum ada data penceramah.
+                                            <td colspan="7" class="p-6 text-center text-gray-500">Belum ada data penceramah.
                                             </td>
                                         </tr>
                                     @endforelse
@@ -236,27 +303,77 @@
                     <h3 class="text-2xl font-bold text-gray-800 border-b-2 border-gray-100 pb-2 mb-6">Kelola & Cetak
                         Jadwal</h3>
 
-                    <div class="flex gap-8 border-b pb-8 mb-8">
-                        <div class="flex-1 bg-gray-50 p-6 rounded-lg border">
+                    <div class="flex flex-col gap-4 border-b pb-8 mb-8 md:flex-row md:gap-8">
+                        <div class="min-w-0 flex-1 bg-gray-50 p-6 rounded-lg border">
                             <h4 class="font-bold text-lg mb-2">Jadwal Khutbah Jumat</h4>
-                            <p class="text-sm text-gray-500 mb-4">Acak jadwal untuk 12 minggu (3 Bulan) ke depan.</p>
-                            <form action="{{ route('schedule.khutbah') }}" method="POST" class="mb-3">@csrf <button
+                            <p class="text-sm text-gray-500 mb-4">Pilih bulan awal untuk mengacak jadwal Jumat selama 3 bulan.</p>
+                            <form action="{{ route('schedule.khutbah') }}" method="POST" class="mb-3">@csrf
+                                <label for="khutbah-month" class="block text-sm font-semibold text-gray-700 mb-1">Bulan awal</label>
+                                <input id="khutbah-month" type="month" name="month" value="{{ old('month', session('khutbah_month', now()->format('Y-m'))) }}" required
+                                    class="w-full border-gray-300 rounded-md px-3 py-2 mb-3">
+                                <button
                                     class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold">Acak
                                     Jadwal Khutbah</button></form>
-                            <a href="{{ route('schedule.print', 'Khutbah') }}" target="_blank"
+                            <a id="print-khutbah-link" href="{{ route('schedule.print', ['type' => 'Khutbah', 'month' => now()->format('Y-m')]) }}" data-month-input="khutbah-month" target="_blank"
                                 class="block text-center text-blue-600 hover:underline font-semibold mt-2">🖨️ Cetak
                                 (Print A4)</a>
                         </div>
 
-                        <div class="flex-1 bg-gray-50 p-6 rounded-lg border">
+                        <div class="min-w-0 flex-1 bg-gray-50 p-6 rounded-lg border">
                             <h4 class="font-bold text-lg mb-2">Jadwal Kultum</h4>
-                            <p class="text-sm text-gray-500 mb-4">Acak jadwal kultum untuk 30 hari berturut-turut.</p>
-                            <form action="{{ route('schedule.kultum') }}" method="POST" class="mb-3">@csrf <button
+                            <p class="text-sm text-gray-500 mb-4">Pilih bulan awal untuk mengacak kultum selama 3 bulan.</p>
+                            <form action="{{ route('schedule.kultum') }}" method="POST" class="mb-3">@csrf
+                                <label for="kultum-month" class="block text-sm font-semibold text-gray-700 mb-1">Bulan awal</label>
+                                <input id="kultum-month" type="month" name="month" value="{{ old('month', session('kultum_month', now()->format('Y-m'))) }}" required
+                                    class="w-full border-gray-300 rounded-md px-3 py-2 mb-3">
+                                <button
                                     class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-semibold">Acak
                                     Jadwal Kultum</button></form>
-                            <a href="{{ route('schedule.print', 'Kultum') }}" target="_blank"
+                            <a id="print-kultum-link" href="{{ route('schedule.print', ['type' => 'Kultum', 'month' => now()->format('Y-m')]) }}" data-month-input="kultum-month" target="_blank"
                                 class="block text-center text-blue-600 hover:underline font-semibold mt-2">🖨️ Cetak
                                 (Print A4)</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg border shadow-sm mb-8">
+                        <h4 class="font-bold text-lg mb-2">Jadwal Asli dari DOCX</h4>
+                        <p class="text-sm text-gray-600 mb-4">Impor jadwal resmi yang terpisah dari hasil pengacakan. Jadwal resmi akan ditampilkan di halaman depan.</p>
+
+                        <form action="{{ route('schedule.import-official') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                            @csrf
+                            <div>
+                                <label for="official-schedule-file" class="block text-sm font-semibold text-gray-700 mb-1">Pilih file jadwal (.docx, maksimal 10 MB)</label>
+                                <input id="official-schedule-file" type="file" name="file_docx" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required
+                                    class="block w-full md:max-w-2xl text-sm text-gray-700 border border-gray-300 rounded-md file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                            </div>
+
+                            <label class="flex items-start gap-3 text-sm text-gray-700">
+                                <input type="checkbox" name="align_month" value="1" @checked(old('align_month', true)) class="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span>Jika tanggal berbeda dari kolom BULAN, gunakan bulan pada kolom BULAN. Dokumen saat ini menulis tanggal bagian Desember sebagai November.</span>
+                            </label>
+
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-md font-semibold">Impor Jadwal Asli</button>
+                        </form>
+
+                        <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-800 text-white text-sm">
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">Khatib / Imam</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100">
+                                    @forelse ($officialSchedules as $officialSchedule)
+                                        <tr>
+                                            <td class="p-3">{{ \Carbon\Carbon::parse($officialSchedule->date)->translatedFormat('d F Y') }}</td>
+                                            <td class="p-3 font-medium">{{ $officialSchedule->speaker_name }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada jadwal resmi yang diimpor.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -508,6 +625,55 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        function updateAturanPenceramah(id, field, value) {
+            const payload = {
+                limit_once: document.getElementById(`limit-once-${id}`).checked ? 1 : 0,
+                limit_twice: document.getElementById(`limit-twice-${id}`).checked ? 1 : 0,
+                skip_pasaran_jawa: document.getElementById(`skip-pasaran-${id}`).value || null,
+            };
+
+            if (field === 'limit_once' && value) {
+                payload.limit_twice = 0;
+                document.getElementById(`limit-twice-${id}`).checked = false;
+            }
+            if (field === 'limit_twice' && value) {
+                payload.limit_once = 0;
+                document.getElementById(`limit-once-${id}`).checked = false;
+            }
+
+            fetch(`/speakers/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify(payload),
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Gagal memperbarui aturan penceramah.');
+                }
+                Toast.fire({ icon: 'success', title: 'Aturan penceramah diperbarui.' });
+            }).catch(() => {
+                Toast.fire({ icon: 'error', title: 'Aturan penceramah gagal diperbarui.' });
+            });
+        }
+
+        document.querySelectorAll('[data-month-input]').forEach((link) => {
+            const monthInput = document.getElementById(link.dataset.monthInput);
+            const updatePrintUrl = () => {
+                const url = new URL(link.href, window.location.origin);
+                if (monthInput.value) {
+                    url.searchParams.set('month', monthInput.value);
+                }
+                link.href = url.toString();
+            };
+
+            monthInput.addEventListener('change', updatePrintUrl);
+            link.addEventListener('click', updatePrintUrl);
+            updatePrintUrl();
+        });
+
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',

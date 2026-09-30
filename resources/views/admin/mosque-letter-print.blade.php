@@ -11,11 +11,8 @@
         .print-actions { display: flex; justify-content: flex-end; padding: 16px; font: 12px Arial, sans-serif; }
         .print-actions button { padding: 10px 14px; border: 0; background: #123d34; color: white; cursor: pointer; }
         .letter { max-width: 760px; margin: 0 auto; }
-        .letter-head { display: flex; align-items: center; gap: 20px; padding-bottom: 13px; border-bottom: 3px double #183e34; text-align: center; }
-        .letter-head img { width: 104px; height: 70px; object-fit: contain; }
-        .letter-head__text { flex: 1; }
-        .letter-head h1 { margin: 0; font: 700 17pt/1.2 Arial, sans-serif; letter-spacing: .3px; }
-        .letter-head p { margin: 5px 0 0; font: 9pt/1.4 Arial, sans-serif; }
+        .letter-head { margin: 0 0 18px; text-align: center; }
+        .letter-head img { display: block; width: 100%; height: auto; max-height: 34mm; object-fit: contain; }
         .letter-meta { margin: 24px 0 28px; }
         .letter-meta p { margin: 2px 0; }
         .letter-subject { margin: 18px 0 24px; text-align: center; }
@@ -25,18 +22,14 @@
         .letter-signature { width: 245px; margin: 28px 0 0 auto; text-align: center; }
         .letter-signature__space { height: 72px; }
         @media print { .print-actions { display: none; } }
-        @media (max-width: 600px) { body { padding: 12px; font-size: 11pt; } .letter-head { gap: 10px; } .letter-head img { width: 70px; height: 55px; } .letter-head h1 { font-size: 14pt; } }
+        @media (max-width: 600px) { body { padding: 12px; font-size: 11pt; } }
     </style>
 </head>
 <body>
     <div class="print-actions"><button type="button" onclick="window.print()">Cetak / Simpan PDF</button></div>
     <main class="letter">
         <header class="letter-head">
-            <img src="{{ asset('logo-masjid.png') }}" alt="Logo Masjid Nurul Iman">
-            <div class="letter-head__text">
-                <h1>TA'MIR MASJID NURUL IMAN</h1>
-                <p>RW IX, Kelurahan Krapyak, Semarang</p>
-            </div>
+            <img src="{{ route('operations.reference-asset', 'kop-fix') }}" alt="Kop resmi Masjid Nurul Iman">
         </header>
         <div class="letter-meta">
             <p>Nomor: {{ $letter->letter_number }}</p>

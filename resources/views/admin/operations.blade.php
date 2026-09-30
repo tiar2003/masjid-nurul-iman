@@ -50,6 +50,12 @@
                         <option value="{{ $availableYear }}" @selected($year === $availableYear)>{{ $availableYear }}</option>
                     @endforeach
                 </select>
+                <label for="operations-search">Cari</label>
+                <input id="operations-search" type="search" name="q" value="{{ $search }}" placeholder="Nomor, nama, perihal..." class="rounded-md border-gray-300 text-sm">
+                <button class="rounded-md bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Cari</button>
+                @if ($module === 'letters')
+                    <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name="archived" value="1" @checked($showArchived)> Arsip</label>
+                @endif
                 <noscript><button class="rounded-md bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Tampilkan</button></noscript>
             </form>
 
@@ -233,7 +239,28 @@
                                 </tbody>
                             @else
                                 <thead><tr><th>Nomor</th><th>Tanggal</th><th>Jenis</th><th>Tujuan</th><th>Perihal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                                    @forelse ($records[$module] as $item)<tr><td class="font-semibold">{{ $item->letter_number }}</td><td>{{ $item->issue_date->format('d/m/Y') }}</td><td>{{ $item->letter_type }}</td><td>{{ $item->recipient }}</td><td>{{ $item->subject }}</td><td>{{ $item->status }}</td><td class="operations-actions"><a href="{{ route('operations.letters.print', $item) }}" target="_blank">Cetak</a>@include('admin.operations-row-actions', ['item' => $item])</td></tr>@empty<tr><td colspan="7" class="operations-empty">Belum ada surat untuk tahun ini.</td></tr>@endforelse
+                                    @forelse ($records[$module] as $item)
+                                        <tr>
+                                            <td class="font-semibold">{{ $item->letter_number }}</td>
+                                            <td>{{ $item->issue_date->format('d/m/Y') }}</td>
+                                            <td>{{ $item->letter_type }}</td>
+                                            <td>{{ $item->recipient }}</td>
+                                            <td>{{ $item->subject }}</td>
+                                            <td>{{ $item->status }}</td>
+                                            <td class="operations-actions">
+                                                <a href="{{ route('operations.letters.print', $item) }}" target="_blank">Cetak</a>
+                                                @if ($item->docx_path)
+                                                    <a href="{{ route('operations.letters.docx', $item) }}">DOCX</a>
+                                                @endif
+                                                @if ($item->pdf_path)
+                                                    <a href="{{ route('operations.letters.pdf', $item) }}">PDF</a>
+                                                @endif
+                                                @include('admin.operations-row-actions', ['item' => $item])
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="7" class="operations-empty">Belum ada surat untuk tahun ini.</td></tr>
+                                    @endforelse
                                 </tbody>
                             @endif
                         </table>

@@ -13,6 +13,7 @@ use App\Models\RamadanSchedule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
 class MosqueOperationsController extends Controller
@@ -34,20 +35,38 @@ class MosqueOperationsController extends Controller
             'module' => ['nullable', 'string', 'in:' . implode(',', array_keys(self::MODULES))],
             'year' => ['nullable', 'integer', 'between:2000,2100'],
             'edit' => ['nullable', 'integer', 'min:1'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'archived' => ['nullable', 'boolean'],
         ]);
 
         $module = $validated['module'] ?? 'ramadan';
         $moduleLabel = self::MODULES[$module];
         $year = (int) ($validated['year'] ?? now()->year);
+        $search = trim($validated['q'] ?? '');
+        $showArchived = (bool) ($validated['archived'] ?? false);
         $records = [
-            'ramadan' => RamadanSchedule::where('year', $year)->orderBy('date')->get(),
-            'qurban-team' => QurbanCommitteeMember::where('year', $year)->orderBy('position')->orderBy('name')->get(),
-            'qurban-contributions' => QurbanContribution::where('year', $year)->orderBy('animal_type')->orderBy('animal_group')->orderBy('participant_name')->get(),
-            'qurban-finance' => QurbanTransaction::where('year', $year)->orderByDesc('date')->get(),
-            'charity-beneficiaries' => OrphanRecipient::where('year', $year)->orderBy('name')->get(),
-            'charity-donations' => OrphanDonation::where('year', $year)->orderByDesc('date')->get(),
-            'charity-distributions' => OrphanDistribution::with('recipient')->where('year', $year)->orderByDesc('date')->get(),
-            'letters' => MosqueLetter::where('year', $year)->orderByDesc('sequence')->get(),
+            'ramadan' => RamadanSchedule::where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('kind', 'like', "%{$search}%")->orWhere('person_name', 'like', "%{$search}%")->orWhere('title', 'like', "%{$search}%");
+            }))->orderBy('date')->get(),
+            'qurban-team' => QurbanCommitteeMember::where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")->orWhere('position', 'like', "%{$search}%");
+            }))->orderBy('position')->orderBy('name')->get(),
+            'qurban-contributions' => QurbanContribution::where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('animal_type', 'like', "%{$search}%")->orWhere('animal_group', 'like', "%{$search}%")->orWhere('participant_name', 'like', "%{$search}%");
+            }))->orderBy('animal_type')->orderBy('animal_group')->orderBy('participant_name')->get(),
+            'qurban-finance' => QurbanTransaction::where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('category', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%")->orWhere('party_name', 'like', "%{$search}%");
+            }))->orderByDesc('date')->get(),
+            'charity-beneficiaries' => OrphanRecipient::where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")->orWhere('group_name', 'like', "%{$search}%");
+            }))->orderBy('name')->get(),
+            'charity-donations' => OrphanDonation::where('year', $year)->when($search, fn ($query) => $query->where('donor_name', 'like', "%{$search}%"))->orderByDesc('date')->get(),
+            'charity-distributions' => OrphanDistribution::with('recipient')->where('year', $year)->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->whereHas('recipient', fn ($recipient) => $recipient->where('name', 'like', "%{$search}%"))->orWhere('description', 'like', "%{$search}%");
+            }))->orderByDesc('date')->get(),
+            'letters' => MosqueLetter::where('year', $year)->when(! $showArchived, fn ($query) => $query->whereNull('archived_at'))->when($search, fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('letter_number', 'like', "%{$search}%")->orWhere('letter_type', 'like', "%{$search}%")->orWhere('recipient', 'like', "%{$search}%")->orWhere('subject', 'like', "%{$search}%");
+            }))->orderByDesc('sequence')->get(),
         ];
 
         $editing = null;
@@ -66,7 +85,7 @@ class MosqueOperationsController extends Controller
         $years = range(max(2000, now()->year - 5), now()->year + 1);
 
         return view('admin.operations', compact(
-            'module', 'year', 'years', 'records', 'editing', 'qurbanIncome', 'qurbanExpense',
+            'module', 'year', 'search', 'showArchived', 'years', 'records', 'editing', 'qurbanIncome', 'qurbanExpense',
             'charityDonations', 'charityDistributions', 'isEditing', 'formAction'
         ))->with('modules', self::MODULES)->with('moduleLabel', $moduleLabel);
     }
@@ -123,7 +142,11 @@ class MosqueOperationsController extends Controller
             return $this->redirectToModule($module, $year, 'Penerima tidak dapat dihapus karena sudah memiliki catatan penyaluran.');
         }
 
-        $record->delete();
+        if ($module === 'letters') {
+            $record->update(['archived_at' => now()]);
+        } else {
+            $record->delete();
+        }
 
         return $this->redirectToModule($module, $year, 'Data berhasil dihapus.');
     }
@@ -133,11 +156,36 @@ class MosqueOperationsController extends Controller
         $letter->load('template');
         $settings = \App\Models\MosqueSetting::pluck('setting_value', 'setting_key');
 
+        if (filled($letter->pdf_path) && Storage::disk('local')->exists($letter->pdf_path)) {
+            return response()->file(Storage::disk('local')->path($letter->pdf_path), [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($letter->pdf_path) . '"',
+            ]);
+        }
+
         if ($letter->template?->template_key === 'ZAKAT_EDARAN_2025') {
             return view('admin.letters.zakat-circular-print', compact('letter', 'settings'));
         }
 
         return view('admin.mosque-letter-print', compact('letter'));
+    }
+
+    public function downloadDocx(MosqueLetter $letter)
+    {
+        abort_if(blank($letter->docx_path) || ! Storage::disk('local')->exists($letter->docx_path), 404);
+
+        return Storage::disk('local')->download($letter->docx_path, basename($letter->docx_path), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
+    }
+
+    public function downloadPdf(MosqueLetter $letter)
+    {
+        abort_if(blank($letter->pdf_path) || ! Storage::disk('local')->exists($letter->pdf_path), 404);
+
+        return Storage::disk('local')->download($letter->pdf_path, basename($letter->pdf_path), [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     public function printZakatHandover(\App\Models\ZakatReceipt $receipt, Request $request)
@@ -156,8 +204,8 @@ class MosqueOperationsController extends Controller
             'kop' => ['MASJID/KOP.png', null],
             'cap-clean' => ['MASJID/cap_msjid_fix-removebg-preview.png', null],
             'cap-scan' => ['MASJID/cap masjid.jpeg', null],
-            'surat-edaran-mark' => ['MASJID/FILE MAS ARIF/LAPORAN ZAKAT FITRAH/EDARAN ZAKAT DAN TANDA TERIMA/SURAT EDARAN ZAKAT FITRAH.docx', 'word/media/image1.png'],
-            'tanda-zakat-mark' => ['MASJID/FILE MAS ARIF/LAPORAN ZAKAT FITRAH/EDARAN ZAKAT DAN TANDA TERIMA/TANDA PENYERAHAN ZAKAT FITRAH.docx', 'word/media/image1.png'],
+            'surat-edaran-mark' => ['MASJID/ROMADON/Zakat/EDARAN ZAKAT DAN TANDA TERIMA/SURAT EDARAN ZAKAT FITRAH.docx', 'word/media/image1.png'],
+            'tanda-zakat-mark' => ['MASJID/ROMADON/Zakat/EDARAN ZAKAT DAN TANDA TERIMA/TANDA PENYERAHAN ZAKAT FITRAH.docx', 'word/media/image1.png'],
         ];
 
         abort_unless(isset($assets[$asset]), 404);

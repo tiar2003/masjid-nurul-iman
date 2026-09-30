@@ -10,6 +10,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        .management-public-section { background: #f5f2e9; }
+        .management-public-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .management-public-group { padding: 22px; border: 1px solid rgba(18, 61, 52, .14); background: rgba(255, 255, 255, .72); }
+        .management-public-group h3 { margin: 0 0 12px; color: #123d34; font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        .management-public-group ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; color: #263a34; font-size: .92rem; line-height: 1.45; }
+        @media (max-width: 800px) { .management-public-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 520px) { .management-public-grid { grid-template-columns: 1fr; } .management-public-group { padding: 18px; } }
+    </style>
 </head>
 <body class="public-site font-sans antialiased">
     @php
@@ -34,6 +43,9 @@
                     <a href="#agenda" @click="menuOpen = false">Agenda</a>
                 @endif
                 <a href="#kegiatan" @click="menuOpen = false">Kegiatan</a>
+                @if ($managementMembers->isNotEmpty())
+                    <a href="#pengurus" @click="menuOpen = false">Pengurus</a>
+                @endif
                 <a href="#keuangan" @click="menuOpen = false">Kotak amal</a>
                 <a class="site-nav__admin" href="{{ url('/login') }}">Masuk admin <span aria-hidden="true">&rarr;</span></a>
             </div>
@@ -160,6 +172,32 @@
                                         @endif
                                     </div>
                                 </div>
+                            </article>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($managementMembers->isNotEmpty())
+            <section class="schedule-section section-pad management-public-section" id="pengurus">
+                <div class="page-width">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow eyebrow--green">Takmir masjid</p>
+                            <h2>Susunan <em>pengurus</em></h2>
+                        </div>
+                        <p class="section-heading__copy">Periode aktif: {{ $managementPeriod->name }}</p>
+                    </div>
+                    <div class="management-public-grid">
+                        @foreach ($managementMembers->groupBy('position_name') as $position => $members)
+                            <article class="management-public-group">
+                                <h3>{{ $position ?: 'Pengurus' }}</h3>
+                                <ul>
+                                    @foreach ($members as $member)
+                                        <li>{{ $member->name }}{{ $member->title ? ', ' . $member->title : '' }}</li>
+                                    @endforeach
+                                </ul>
                             </article>
                         @endforeach
                     </div>

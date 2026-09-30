@@ -9,13 +9,22 @@ use App\Models\ZakatDistribution;
 use App\Models\ZakatPeriod;
 use App\Models\ZakatReceipt;
 use App\Models\ZakatReport;
+use App\Services\ArchiveTemplateResolver;
+use App\Services\PdfDocumentGenerator;
+use App\Services\WordDocumentGenerator;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ZakatAdminController extends Controller
 {
     private const TABS = ['ringkasan', 'periode', 'penerimaan', 'distribusi', 'laporan', 'pengaturan'];
+
+    public function __construct(private ArchiveTemplateResolver $templateResolver)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -182,7 +191,49 @@ class ZakatAdminController extends Controller
             ]);
         });
 
+        try {
+            $this->archiveGeneratedCircular($letter, $template);
+        } catch (\Throwable $exception) {
+            $letter->delete();
+            throw $exception;
+        }
+
         return redirect()->route('zakat-admin.circular.print', $letter);
+    }
+
+    private function archiveGeneratedCircular(\App\Models\MosqueLetter $letter, LetterTemplate $template): void
+    {
+        $resolvedTemplate = $this->templateResolver->resolve($template->source_path);
+        if ($resolvedTemplate === null) {
+            throw ValidationException::withMessages([
+                'template' => 'Template DOCX Surat Edaran Zakat tidak ditemukan di arsip resmi.',
+            ]);
+        }
+
+        try {
+            $values = array_merge($letter->field_data ?? [], [
+                '_template_key' => $template->template_key,
+                'letter_number' => $letter->letter_number,
+                'issue_date' => $letter->issue_date->toDateString(),
+                'year' => (string) $letter->year,
+            ]);
+            $temporaryDocx = (new WordDocumentGenerator())->generateFromTemplate($resolvedTemplate[0], $values);
+            $content = file_get_contents($temporaryDocx);
+            $temporaryPdf = (new PdfDocumentGenerator())->generateFromDocx($temporaryDocx);
+            $pdfContent = file_get_contents($temporaryPdf);
+            unlink($temporaryDocx);
+            unlink($temporaryPdf);
+
+            $path = 'generated/letters/' . $letter->id . '-zakat-edaran.docx';
+            $pdfPath = 'generated/letters/' . $letter->id . '-zakat-edaran.pdf';
+            Storage::disk('local')->put($path, $content);
+            Storage::disk('local')->put($pdfPath, $pdfContent);
+            $letter->update(['docx_path' => $path, 'pdf_path' => $pdfPath]);
+        } finally {
+            if ($resolvedTemplate[1]) {
+                @unlink($resolvedTemplate[0]);
+            }
+        }
     }
 
     public function storeReceipt(Request $request)

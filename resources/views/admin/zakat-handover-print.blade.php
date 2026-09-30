@@ -12,10 +12,8 @@
         .print-toolbar a, .print-toolbar button { padding: 9px 12px; border: 0; background: #123d34; color: white; text-decoration: none; cursor: pointer; }
         .copies { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
         .copy { position: relative; min-width: 0; padding: 1mm 2mm; }
-        .copy-head { position: relative; min-height: 22mm; padding-left: 14mm; text-align: center; }
-        .copy-head img { position: absolute; left: 0; top: 0; width: 11mm; height: 11mm; object-fit: contain; }
-        .copy-head p { margin: 0; font-weight: 700; line-height: 1.1; }
-        .copy-head .address { margin-top: 1mm; font-size: 8pt; font-weight: 400; }
+        .copy-head { position: relative; min-height: 22mm; text-align: center; }
+        .copy-head img { display: block; width: 100%; max-height: 27mm; object-fit: contain; }
         .copy-title { margin: 4mm 0 3mm; text-align: center; font-size: 10pt; font-weight: 700; letter-spacing: .2px; }
         .copy p { margin: 0 0 2mm; }
         .copy .item { margin-left: 4mm; }
@@ -38,10 +36,7 @@
     @foreach ([['title' => 'TANDA PENYERAHAN', 'lead' => 'Pada saat ini kami serahkan :', 'sign' => 'Yang menyerahkan', 'person' => $receipt->muzakki_name], ['title' => 'TANDA TERIMA', 'lead' => 'Pada saat ini kami terima :', 'sign' => 'Yang menerima', 'person' => $official ?: ($settings['mosque_name'] ?? 'TA’MIR MASJID NURUL IMAN')]] as $copy)
         <main class="copy">
             <header class="copy-head">
-                <img src="{{ route('operations.reference-asset', 'tanda-zakat-mark') }}" alt="Lambang pada template asli">
-                <p>TA’MIR MASJID NURUL&nbsp; IMAN</p>
-                <p>RW. IX KELURAHAN KRAPYAK SEMARANG</p>
-                <p class="address">SEKRETARIAT : {{ $settings['secretariat_address'] ?? 'JL.HANOMAN IX NO.30 SEMARANG' }} TELP.{{ $settings['mosque_phone'] ?? '081325149999' }}</p>
+                <img src="{{ route('operations.reference-asset', 'kop-fix') }}" alt="Kop resmi Masjid Nurul Iman">
             </header>
             <h1 class="copy-title">{{ $copy['title'] }}</h1>
             <p>Assalamualaikum Wr.Wb</p>

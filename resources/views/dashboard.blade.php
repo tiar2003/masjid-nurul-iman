@@ -150,6 +150,14 @@
                         class="flex min-h-12 items-center px-5 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-50">
                         Administrasi Online <span class="ml-2 text-emerald-600" aria-hidden="true">&rarr;</span>
                     </a>
+                    <a href="{{ route('letter-template.index') }}"
+                        class="flex min-h-12 items-center px-5 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-50">
+                        Template Surat <span class="ml-2 text-emerald-600" aria-hidden="true">&rarr;</span>
+                    </a>
+                    <a href="{{ route('administration.foundation') }}"
+                        class="flex min-h-12 items-center px-5 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-50">
+                        Sekretariat & Master Data <span class="ml-2 text-emerald-600" aria-hidden="true">&rarr;</span>
+                    </a>
                 </nav>
 
                 <div x-show="activeMenu === 'jadwal-input'" x-cloak x-transition.opacity.duration.300ms
